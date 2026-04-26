@@ -1,8 +1,6 @@
 networks:
   traefik-public:
     external: true
-  internal:
-    driver: overlay
 
 secrets:
   skill_web_public_key:
@@ -18,7 +16,6 @@ services:
     image: ghcr.io/steadingworks/skill-web-fetch:latest
     networks:
       - traefik-public
-      - internal
     secrets:
       - skill_web_public_key
     environment:
@@ -48,7 +45,7 @@ services:
   searxng:
     image: searxng/searxng:latest
     networks:
-      - internal
+      - traefik-public
     configs:
       - source: searxng-settings
         target: /etc/searxng/settings.yml
