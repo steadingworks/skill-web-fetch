@@ -1,0 +1,12 @@
+use_default_settings: true
+
+server:
+  # Used for CSRF/session signing. Not user-facing — value doesn't need to be
+  # kept secret since SearXNG is internal-only with no browser sessions.
+  secret_key: "skill-web-fetch-searxng-internal"
+  limiter: false
+
+search:
+  formats:
+    - html
+    - json

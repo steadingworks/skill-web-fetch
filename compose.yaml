@@ -1,24 +1,32 @@
 networks:
   traefik-public:
     external: true
+  internal:
+    driver: overlay
+    internal: true
 
 secrets:
   skill_web_public_key:
     external: true
+
+configs:
+  searxng-settings:
+    name: searxng-settings-v${SEARXNG_CONFIG_VERSION:-1}
+    file: ./searxng/settings.yml
 
 services:
   api:
     image: ghcr.io/steadingworks/skill-web-fetch:latest
     networks:
       - traefik-public
+      - internal
     secrets:
       - skill_web_public_key
     environment:
       - WEBFETCH_JWT_PUBLIC_KEY_PATH=/run/secrets/skill_web_public_key
       - WEBFETCH_JWT_ISSUER=skill-auth.flowdart.uk
       - WEBFETCH_LOG_LEVEL=INFO
-      # Uncomment when SearXNG is deployed:
-      # - WEBFETCH_SEARXNG_BASE_URL=http://searxng:8080
+      - WEBFETCH_SEARXNG_BASE_URL=http://searxng:8080
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 30s
@@ -37,3 +45,24 @@ services:
         - traefik.http.routers.skill-web.tls=true
         - traefik.http.routers.skill-web.tls.certresolver=cloudflare
         - traefik.http.services.skill-web.loadbalancer.server.port=8081
+
+  searxng:
+    image: searxng/searxng:latest
+    networks:
+      - internal
+    configs:
+      - source: searxng-settings
+        target: /etc/searxng/settings.yml
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
