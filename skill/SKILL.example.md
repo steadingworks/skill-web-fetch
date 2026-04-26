@@ -69,7 +69,9 @@ curl -s https://<your-api-host>/health
 **Open-ended search** — call `/v1/search`, review titles and snippets, pick the 2–3 most
 relevant URLs, call `/v1/fetch` on each, then synthesise the content into an answer.
 
-**401 response** — re-acquire the token (re-run the setup command) then retry the request.
+**401 response** — re-acquire the token (re-run the setup command) then retry the request once.
+
+**4xx response (other than 401)** — do not retry. These are client errors that will not resolve on retry. Report the status code and detail to the user.
 
 **503 on /v1/search** — fall back to `/v1/fetch` on any known relevant URLs.
 

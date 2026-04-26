@@ -13,6 +13,8 @@ Error mapping:
 
 from __future__ import annotations
 
+import json
+import logging
 from typing import Annotated
 
 import httpx
@@ -22,6 +24,7 @@ from auth import require_jwt
 from config import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 _SEARCH_TIMEOUT = 15.0
 
@@ -52,16 +55,31 @@ async def search(
             )
             resp.raise_for_status()
     except httpx.TimeoutException:
+        logger.error(json.dumps({
+            "event": "upstream_timeout",
+            "upstream": searxng_url,
+            "timeout_seconds": _SEARCH_TIMEOUT,
+        }))
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="Search backend timed out",
         )
     except httpx.HTTPStatusError as exc:
+        logger.error(json.dumps({
+            "event": "upstream_http_error",
+            "upstream": searxng_url,
+            "upstream_status": exc.response.status_code,
+        }))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Search backend returned HTTP {exc.response.status_code}",
         )
     except httpx.RequestError as exc:
+        logger.error(json.dumps({
+            "event": "upstream_request_error",
+            "upstream": searxng_url,
+            "error": type(exc).__name__,
+        }))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Search request failed: {type(exc).__name__}",

@@ -8,3 +8,7 @@ build/
 .env
 .env.*
 *.pem
+
+# Installed skill prompt and real deployment config — never commit these
+skill/SKILL.md
+compose.yaml

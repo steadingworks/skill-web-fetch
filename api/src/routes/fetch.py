@@ -13,6 +13,8 @@ Error mapping:
 
 from __future__ import annotations
 
+import json
+import logging
 from enum import Enum
 from typing import Annotated
 
@@ -23,6 +25,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from auth import require_jwt
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 _FETCH_TIMEOUT = 20.0
 _MAX_BYTES = 5 * 1024 * 1024  # 5 MB cap on raw response
@@ -59,16 +62,31 @@ async def fetch(
             resp = await client.get(url)
             resp.raise_for_status()
     except httpx.TimeoutException:
+        logger.error(json.dumps({
+            "event": "upstream_timeout",
+            "upstream": url,
+            "timeout_seconds": _FETCH_TIMEOUT,
+        }))
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="Upstream timed out",
         )
     except httpx.HTTPStatusError as exc:
+        logger.error(json.dumps({
+            "event": "upstream_http_error",
+            "upstream": url,
+            "upstream_status": exc.response.status_code,
+        }))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Upstream returned HTTP {exc.response.status_code}",
         )
     except httpx.RequestError as exc:
+        logger.error(json.dumps({
+            "event": "upstream_request_error",
+            "upstream": url,
+            "error": type(exc).__name__,
+        }))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Request failed: {type(exc).__name__}",
