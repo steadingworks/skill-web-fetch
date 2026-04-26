@@ -5,7 +5,7 @@ set -euo pipefail
 
 TARGET=steward.ds-m1
 STACK=skill-web-fetch
-IMAGE=ghcr.io/scottjamesrogers/skill-web-fetch:latest
+IMAGE=ghcr.io/steadingworks/skill-web-fetch:latest
 
 # ── Build and push ─────────────────────────────────────────────────────────────
 

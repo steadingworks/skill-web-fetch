@@ -8,7 +8,7 @@ secrets:
 
 services:
   api:
-    image: ghcr.io/scottjamesrogers/skill-web-fetch:latest
+    image: ghcr.io/steadingworks/skill-web-fetch:latest
     networks:
       - traefik-public
     secrets:
