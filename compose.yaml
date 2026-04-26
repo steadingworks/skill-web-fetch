@@ -3,7 +3,6 @@ networks:
     external: true
   internal:
     driver: overlay
-    internal: true
 
 secrets:
   skill_web_public_key:
