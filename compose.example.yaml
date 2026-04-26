@@ -1,26 +1,17 @@
-networks:
-  traefik-public:
-    external: true
-
 secrets:
   skill_web_public_key:
-    external: true
-
-configs:
-  searxng-settings:
-    name: searxng-settings-v${SEARXNG_CONFIG_VERSION:-1}
-    file: ./searxng/settings.yml
+    file: ./secrets/skill_web_public_key.pem
 
 services:
   api:
     image: ghcr.io/steadingworks/skill-web-fetch:latest
-    networks:
-      - traefik-public
+    ports:
+      - "8081:8081"
     secrets:
       - skill_web_public_key
     environment:
       - WEBFETCH_JWT_PUBLIC_KEY_PATH=/run/secrets/skill_web_public_key
-      - WEBFETCH_JWT_ISSUER=<your-auth-service-hostname>
+      - WEBFETCH_JWT_ISSUER=<your-auth-host>
       - WEBFETCH_LOG_LEVEL=INFO
       - WEBFETCH_SEARXNG_BASE_URL=http://searxng:8080
     healthcheck:
@@ -29,26 +20,12 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    deploy:
-      replicas: 1
-      update_config:
-        order: start-first
-        failure_action: rollback
-      labels:
-        - traefik.enable=true
-        - traefik.http.routers.skill-web.rule=Host(`<your-hostname>`)
-        - traefik.http.routers.skill-web.entrypoints=websecure
-        - traefik.http.routers.skill-web.tls=true
-        - traefik.http.routers.skill-web.tls.certresolver=<your-certresolver>
-        - traefik.http.services.skill-web.loadbalancer.server.port=8081
+    restart: unless-stopped
 
   searxng:
     image: searxng/searxng:latest
-    networks:
-      - traefik-public
-    configs:
-      - source: searxng-settings
-        target: /etc/searxng/settings.yml
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     environment:
       - SEARXNG_BASE_URL=http://searxng:8080
     healthcheck:
@@ -57,10 +34,5 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
-    deploy:
-      replicas: 1
-      update_config:
-        order: start-first
-        failure_action: rollback
-      # SearXNG requires direct internet access. Add placement constraints
-      # to exclude any VPN-routed or otherwise restricted nodes.
+    restart: unless-stopped
+    # SearXNG requires direct internet access — do not run on a VPN-routed host
