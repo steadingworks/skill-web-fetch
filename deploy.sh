@@ -1,47 +1,31 @@
 #!/usr/bin/env bash
-# deploy.sh — build web-fetch image on ds-m1 and deploy stack
-# Requires: skill_web_public_key secret already exists (created by skill-auth/deploy.sh)
+# deploy.sh — build and push image to GHCR, deploy stack to Swarm
+# Requires: skill_web_public_key secret already exists (see skill-auth/deploy.sh secrets)
 set -euo pipefail
 
 TARGET=steward.ds-m1
-REMOTE_DIR=/home/hopper/docker/skill-web-fetch
 STACK=skill-web-fetch
+IMAGE=ghcr.io/scottjamesrogers/skill-web-fetch:latest
 
-# ── Preflight ─────────────────────────────────────────────────────────────────
+# ── Build and push ─────────────────────────────────────────────────────────────
 
-check_secrets() {
-  local existing
-  existing=$(ssh "$TARGET" "sudo docker secret ls --format '{{.Name}}'")
-
-  if ! echo "$existing" | grep -q "^skill_web_public_key$"; then
-    echo "error: skill_web_public_key secret not found."
-    echo "Run skill-auth/deploy.sh secrets first — it creates both key secrets."
-    exit 1
-  fi
-  echo "→ skill_web_public_key present ✓"
-}
-
-# ── Build ─────────────────────────────────────────────────────────────────────
-
-build_image() {
-  echo "→ Syncing source to $TARGET:$REMOTE_DIR..."
-  ssh "$TARGET" "mkdir -p $REMOTE_DIR"
-  rsync -av --delete \
-    --exclude='.git' \
-    --exclude='__pycache__' \
-    --exclude='*.pyc' \
-    ./ "$TARGET:$REMOTE_DIR/"
-
-  echo "→ Building image on $TARGET..."
-  ssh "$TARGET" "cd $REMOTE_DIR && sudo docker build -t skill-web-fetch:latest api/"
-  echo "  ✓ Image built"
+build() {
+  echo "→ Building $IMAGE..."
+  docker build -t "$IMAGE" api/
+  echo "→ Pushing to GHCR..."
+  docker push "$IMAGE"
+  echo "  ✓ Pushed $IMAGE"
 }
 
 # ── Deploy ────────────────────────────────────────────────────────────────────
 
-deploy_stack() {
+deploy() {
   echo "→ Deploying stack $STACK..."
-  ssh "$TARGET" "cd $REMOTE_DIR && sudo docker stack deploy -c compose.yaml $STACK"
+  ssh "$TARGET" "mkdir -p /home/hopper/docker/$STACK"
+  rsync -av --delete \
+    --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' \
+    compose.yaml "$TARGET:/home/hopper/docker/$STACK/"
+  ssh "$TARGET" "sudo docker stack deploy -c /home/hopper/docker/$STACK/compose.yaml $STACK"
   echo "  ✓ Stack deployed"
   echo ""
   echo "→ Service status:"
@@ -50,8 +34,17 @@ deploy_stack() {
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-case "${1:-deploy}" in
-  build)   build_image ;;
-  deploy)  check_secrets; build_image; deploy_stack ;;
-  *)       echo "Usage: $0 [build|deploy]"; exit 1 ;;
+case "${1:-}" in
+  build)  build ;;
+  push)   build ;;
+  deploy) build; deploy ;;
+  stack)  deploy ;;
+  *)
+    echo "Usage: $0 <command>"
+    echo ""
+    echo "  build    Build and push image to GHCR"
+    echo "  deploy   Build, push, and deploy stack"
+    echo "  stack    Deploy stack only (skip build)"
+    exit 1
+    ;;
 esac

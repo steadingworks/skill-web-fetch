@@ -8,7 +8,7 @@ secrets:
 
 services:
   api:
-    image: skill-web-fetch:latest
+    image: ghcr.io/scottjamesrogers/skill-web-fetch:latest
     networks:
       - traefik-public
     secrets:
@@ -30,9 +30,6 @@ services:
       update_config:
         order: start-first
         failure_action: rollback
-      placement:
-        constraints:
-          - node.labels.role == flexible
       labels:
         - traefik.enable=true
         - traefik.http.routers.skill-web.rule=Host(`skill-web.flowdart.uk`)
