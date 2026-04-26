@@ -1,7 +1,7 @@
 ---
 name: web-fetch
 description: Fetch web pages or search the internet. Use when the user asks to fetch, read, look up, search for, or find information on the web. Returns clean extracted content ready for synthesis. TRIGGER on "fetch", "get page", "read url", "look up", "search for", "find on web".
-allowed-tools: Bash(curl:*), Bash(grep:*), Bash(python3:*)
+allowed-tools: Bash(curl:*), Bash(grep:*)
 user-invocable: true
 ---
 
@@ -19,7 +19,7 @@ Run once per session. Re-run if any API call returns 401.
 ```bash
 SKILL_WEB_TOKEN=$(curl -s -X POST https://<your-auth-host>/token \
   -H "X-API-Key: $(grep '^key=' ~/.config/homelab/skill-apis.api | cut -d= -f2-)" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+  | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 ```
 
 Never print or echo `$SKILL_WEB_TOKEN`.
