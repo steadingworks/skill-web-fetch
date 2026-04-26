@@ -11,7 +11,7 @@ IMAGE=ghcr.io/steadingworks/skill-web-fetch:latest
 
 build() {
   echo "→ Building $IMAGE..."
-  docker build -t "$IMAGE" api/
+  docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE" api/
   echo "→ Pushing to GHCR..."
   docker push "$IMAGE"
   echo "  ✓ Pushed $IMAGE"
