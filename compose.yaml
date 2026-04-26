@@ -66,3 +66,6 @@ services:
       update_config:
         order: start-first
         failure_action: rollback
+      placement:
+        constraints:
+          - node.labels.route != vpn
