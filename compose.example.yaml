@@ -20,7 +20,7 @@ services:
       - skill_web_public_key
     environment:
       - WEBFETCH_JWT_PUBLIC_KEY_PATH=/run/secrets/skill_web_public_key
-      - WEBFETCH_JWT_ISSUER=skill-auth.flowdart.uk
+      - WEBFETCH_JWT_ISSUER=<your-auth-service-hostname>
       - WEBFETCH_LOG_LEVEL=INFO
       - WEBFETCH_SEARXNG_BASE_URL=http://searxng:8080
     healthcheck:
@@ -36,10 +36,10 @@ services:
         failure_action: rollback
       labels:
         - traefik.enable=true
-        - traefik.http.routers.skill-web.rule=Host(`skill-web.flowdart.uk`)
+        - traefik.http.routers.skill-web.rule=Host(`<your-hostname>`)
         - traefik.http.routers.skill-web.entrypoints=websecure
         - traefik.http.routers.skill-web.tls=true
-        - traefik.http.routers.skill-web.tls.certresolver=cloudflare
+        - traefik.http.routers.skill-web.tls.certresolver=<your-certresolver>
         - traefik.http.services.skill-web.loadbalancer.server.port=8081
 
   searxng:
@@ -62,6 +62,5 @@ services:
       update_config:
         order: start-first
         failure_action: rollback
-      placement:
-        constraints:
-          - node.labels.route != vpn
+      # SearXNG requires direct internet access. Add placement constraints
+      # to exclude any VPN-routed or otherwise restricted nodes.
