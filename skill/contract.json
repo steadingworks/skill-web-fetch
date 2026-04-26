@@ -1,0 +1,98 @@
+{
+  "schema": "skill-contract/v1",
+  "name": "web-fetch",
+  "version": "1.0.0",
+  "description": "Stateless web fetch and search API. Fetches URLs and extracts readable content; proxies web search via SearXNG.",
+  "auth": {
+    "type": "bearer-jwt",
+    "algorithm": "RS256",
+    "token_endpoint": "https://skill-auth.flowdart.uk/token",
+    "token_request_header": "X-API-Key",
+    "credential_file": "~/.config/homelab/skill-apis.api",
+    "credential_key": "key",
+    "token_ttl_seconds": 3600
+  },
+  "base_url": "https://skill-web.flowdart.uk",
+  "side_effects": "none",
+  "endpoints": [
+    {
+      "id": "fetch",
+      "method": "GET",
+      "path": "/v1/fetch",
+      "description": "Fetch a URL and return extracted readable content",
+      "auth_required": true,
+      "parameters": [
+        {
+          "name": "url",
+          "type": "string",
+          "required": true,
+          "description": "URL to fetch — http/https only"
+        },
+        {
+          "name": "format",
+          "type": "enum",
+          "values": ["markdown", "text"],
+          "default": "markdown",
+          "required": false
+        }
+      ],
+      "response": {
+        "url": "string — resolved URL after redirects",
+        "format": "string — markdown or text",
+        "content": "string — extracted content, max 50000 chars"
+      },
+      "errors": {
+        "400": "Invalid URL scheme (non http/https)",
+        "401": "Token missing, invalid, or expired",
+        "403": "Token scope insufficient",
+        "502": "Upstream HTTP error or connection failure",
+        "504": "Upstream timeout (20s)"
+      }
+    },
+    {
+      "id": "search",
+      "method": "GET",
+      "path": "/v1/search",
+      "description": "Search the web via SearXNG. Returns 503 if WEBFETCH_SEARXNG_BASE_URL is not set.",
+      "auth_required": true,
+      "parameters": [
+        {
+          "name": "q",
+          "type": "string",
+          "required": true,
+          "description": "Search query"
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "required": false,
+          "default": 10,
+          "min": 1,
+          "max": 50
+        }
+      ],
+      "response": {
+        "query": "string",
+        "results": "array of {title: string, url: string, snippet: string, engine: string}"
+      },
+      "errors": {
+        "401": "Token missing, invalid, or expired",
+        "403": "Token scope insufficient",
+        "502": "Search backend error or connection failure",
+        "503": "Search backend not configured (set WEBFETCH_SEARXNG_BASE_URL)",
+        "504": "Search backend timeout (15s)"
+      }
+    },
+    {
+      "id": "health",
+      "method": "GET",
+      "path": "/health",
+      "description": "Health check — no authentication required",
+      "auth_required": false,
+      "response": {
+        "status": "ok",
+        "service": "skill-web-fetch"
+      }
+    }
+  ]
+}
