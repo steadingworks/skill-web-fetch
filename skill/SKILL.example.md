@@ -17,7 +17,7 @@ You do NOT fetch URLs directly. All web access goes through the API.
 Run once per session. Re-run if any API call returns 401.
 
 ```bash
-SKILL_WEB_TOKEN=$(curl -s -X POST https://skill-auth.flowdart.uk/token \
+SKILL_WEB_TOKEN=$(curl -s -X POST https://<your-auth-host>/token \
   -H "X-API-Key: $(grep '^key=' ~/.config/homelab/skill-apis.api | cut -d= -f2-)" \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
 ```
@@ -31,7 +31,7 @@ All requests require: `-H "Authorization: Bearer $SKILL_WEB_TOKEN"`
 ### Fetch a URL
 
 ```bash
-curl -s -G "https://skill-web.flowdart.uk/v1/fetch" \
+curl -s -G "https://<your-api-host>/v1/fetch" \
   -H "Authorization: Bearer $SKILL_WEB_TOKEN" \
   --data-urlencode "url=https://example.com" \
   --data-urlencode "format=markdown"
@@ -46,7 +46,7 @@ Response: `{"url": "...", "format": "...", "content": "..."}` — content capped
 ### Search
 
 ```bash
-curl -s -G "https://skill-web.flowdart.uk/v1/search" \
+curl -s -G "https://<your-api-host>/v1/search" \
   -H "Authorization: Bearer $SKILL_WEB_TOKEN" \
   --data-urlencode "q=your query here" \
   -d "limit=10"
@@ -59,7 +59,7 @@ If search returns 503, the backend is not yet configured — use fetch on known 
 ### Health (no auth)
 
 ```bash
-curl -s https://skill-web.flowdart.uk/health
+curl -s https://<your-api-host>/health
 ```
 
 ## How to approach tasks
