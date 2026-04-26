@@ -1,0 +1,42 @@
+networks:
+  traefik-public:
+    external: true
+
+secrets:
+  skill_web_public_key:
+    external: true
+
+services:
+  api:
+    image: skill-web-fetch:latest
+    networks:
+      - traefik-public
+    secrets:
+      - skill_web_public_key
+    environment:
+      - WEBFETCH_JWT_PUBLIC_KEY_PATH=/run/secrets/skill_web_public_key
+      - WEBFETCH_JWT_ISSUER=skill-auth.flowdart.uk
+      - WEBFETCH_LOG_LEVEL=INFO
+      # Uncomment when SearXNG is deployed:
+      # - WEBFETCH_SEARXNG_BASE_URL=http://searxng:8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
+      placement:
+        constraints:
+          - node.labels.role == flexible
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.skill-web.rule=Host(`skill-web.flowdart.uk`)
+        - traefik.http.routers.skill-web.entrypoints=websecure
+        - traefik.http.routers.skill-web.tls=true
+        - traefik.http.routers.skill-web.tls.certresolver=cloudflare
+        - traefik.http.services.skill-web.loadbalancer.server.port=8081
