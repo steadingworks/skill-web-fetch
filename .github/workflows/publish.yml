@@ -24,4 +24,6 @@ jobs:
         with:
           context: api
           push: true
-          tags: ghcr.io/steadingworks/skill-web-fetch:latest
+          tags: |
+            ghcr.io/steadingworks/skill-web-fetch:latest
+            ghcr.io/steadingworks/skill-web-fetch:${{ github.sha }}
